@@ -20,7 +20,7 @@ import { registerMicroApps, start } from '@ice/stark';
 import { setBasename } from '@ice/stark-app';
 import Layout from './layouts/BasicLayout'//这个是侧边栏，一会将路由的时候分析
 
-(2)注册微服务
+(2)注册微应用
 一般放在mounted钩子里,
 name：字段为微应用唯一标识，可以自己定义，但是必须唯一
 activePath：微应用激活的路由规则，也是自己定义
@@ -52,7 +52,7 @@ registerMicroApps([
     }
 ]);
 
-(3)微服务的生命周期监听
+(3)微应用的生命周期监听
 同样在mounted中实现，相当于一个内置监听
 start({
     //预加载
@@ -62,7 +62,7 @@ start({
     sandbox:true,
     onAppEnter: (appConfig) => {
         const { activePath } = appConfig;//activePath 基座自定义路由
-        setBasename(activePath)//和微服务的路由映射
+        setBasename(activePath)//和微应用的路由衔接
     },
     onLoadingApp: () => {
         this.loading = true;
@@ -82,10 +82,10 @@ start({
     }
 });
 *****************************************************
-(4)这里有个setBasename是为了将自定义路由微服务的路由作拼接的
+(4)这里有个setBasename是为了将自定义路由微应用的路由作拼接的
 onAppEnter: (appConfig) => {
     const { activePath } = appConfig;//activePath 基座自定义路由
-    setBasename(activePath)//和微服务的路由映射
+    setBasename(activePath)//和微应用的路由衔接
 },
 
 ```
@@ -202,7 +202,7 @@ output: {
 
 (3)路由拼接
 基座里有 setBasename(activePath)是把自定义路由暴露出来
-我们微服务定义路由的时候需要把自定义路由拿来作拼接
+我们微应用定义路由的时候需要把自定义路由拿来作拼接
 
 import Vue from 'vue';
 import Router from 'vue-router';
@@ -217,7 +217,7 @@ export default new Router({
   base: getBasename(),
 });
 这里的的getBasename就是为了拿到自定义路由
-如果微服务单独跑的话，得到的是空字符串
+如果微应用单独跑的话，得到的是空字符串
 
 
 ```
@@ -225,7 +225,7 @@ export default new Router({
 ### 微应用往基座的挂载
 
 ```
-我按照上一节思路定义了一个微服务
+我按照上一节思路定义了一个微应用
 如果往基座上挂载呢
 (1)打包
 npm run build 
@@ -264,7 +264,7 @@ registerMicroApps([
     </div>
   </div>
 </template>
-其中microAppsActive是指在微服务没有活跃的情况下
+其中microAppsActive是指在微应用没有活跃的情况下
 使用基座路由
 data () {
     return {
@@ -296,7 +296,7 @@ start({
 npm install --save @ice/stark-data
 ------------------------------------
 
-(1)基座通过store和微服务通信
+(1)基座通过store和微应用通信
 
 --基座主要是set
 import { store } from '@ice/stark-data';
@@ -309,21 +309,22 @@ setTimeout(() => {
   store.set('language', 'EN');
 }, 3000);
 
---微服务通过on监听或者get方法获取数据
+--微应用通过on监听或者get方法获取数据
+异步的时候用监听，同步的时候直接get
 // 微应用
 import { store } from '@ice/stark-data';
 
-// 监听语言变化
+// 监听语言变化，因为language异步设置了，所以需要监听
 store.on('language', (lang) => {
   console.log(`current language is ${lang}`);
 }, true);
 
-// 获取当前用户
+// 获取当前用户，同步直接get
 const userInfo = store.get('user');
 
 
 --------------------------
-(2)微服务通过event和基座通信
+(2)微应用通过event和基座通信
 --基座进行监听
 // 主应用
 import { event } from '@ice/stark-data';
@@ -342,6 +343,19 @@ event.emit('freshMessage');
 带参可以类比eventBus，有待验证，但是八九不离十
 this.$EventBus.$emit("updateMsg", this.msg);
 this.$EventBus.$on('updateMsg', value=>{this.title= value})
+
+--done
+确实和上边eventBus的方法一致，应该就是原有的封装
+微应用：
+event.emit('freshMessage',"hello");
+基座上：
+event.on('freshMessage', (value) => {
+  // 重新获取消息数
+  console.log(value);
+});
+注意两边event的引入
+
+
 ```
 
 ### 样式和脚本隔离
